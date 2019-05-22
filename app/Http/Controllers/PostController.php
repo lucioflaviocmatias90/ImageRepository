@@ -42,7 +42,6 @@ class PostController extends Controller
             'data' => $data,
             'message' => 'Criado com sucesso'
         ], 201);
-//        return $this->repo->uploadImage($request);
     }
 
     /**
@@ -69,8 +68,8 @@ class PostController extends Controller
     public function update(Request $request, Post $post)
     {
         $this->repo->verifyImageInStorage($post->image);
-        $request->image = $this->repo->uploadImage($request);
-        $post->update($request->all());
+        $post->update($request->except('image'));
+        $post->update(['image' => $this->repo->uploadImage($request)]);
         return response()->json([
             'data' => $post,
             'message' => 'Atualizado com sucesso'
