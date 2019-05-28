@@ -9,5 +9,8 @@ class Post extends Model
     protected $fillable = ['title', 'description', 'image'];
     protected $table = 'posts';
     public $timestamps = true;
-    protected $casts = ['image'=>'array'];
+    protected $casts = [
+    	'image'=>'array',
+    	'cover'=>'array',
+    ];
 }

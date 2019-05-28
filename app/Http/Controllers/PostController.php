@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Post;
-use App\Repositories\ImageRepository;
+use App\Services\ImageService;
 use Illuminate\Http\Request;
 
 class PostController extends Controller
@@ -12,7 +12,7 @@ class PostController extends Controller
 
     public function __construct()
     {
-        $this->repo = new ImageRepository('image', 'posts');
+        $this->repo = new ImageService(['image', 'cover'], 'posts');
     }
 
     /**
@@ -36,8 +36,8 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        $data = Post::create($request->except('image'));
-        $data->update(['image'=>$this->repo->uploadImage($request)]);
+        $data = Post::create($request->except(['image', 'cover']));
+        $this->repo->uploadImage($request, $data);
         return response()->json([
             'data' => $data,
             'message' => 'Criado com sucesso'

@@ -14,45 +14,49 @@
     ],
 */
 
-namespace App\Repositories;
+namespace App\Services;
 
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\ImageManagerStatic as Image;
 
-class ImageRepository
+class ImageService
 {
-    private $imageField;
+    private $imageFields;
     private $folderDestination;
     private $storageDisk;
     private $newWidth;
     private $path;
 
-    public function __construct($imageField, $folderDestination = 'photos', $storageDisk = 'public', $newWidth = 500)
+    public function __construct(array $imageFields, $folderDestination = 'photos', $storageDisk = 'public', int $newWidth = 500)
     {
-        $this->imageField = $imageField;
+        $this->imageFields = $imageFields;
         $this->folderDestination = $folderDestination;
         $this->storageDisk = $storageDisk;
         $this->newWidth = $newWidth;
     }
 
-    public function uploadImage($request)
-    {
-        // arquivo binário
-        if ($request->hasFile($this->imageField)) {
-            $this->path = collect($request->file($this->imageField))->map(function($image) {
-                return $this->resizeImage($image);
-            });
-        }
+    public function uploadImage($request, $objModel)
+    {        
+        foreach ($this->imageFields as $imageField) {
+            // arquivo binário
+            if ($request->hasFile($imageField)) {
+                $this->path = collect($request->file($imageField))->map(function($image) {
+                    return $this->resizeImage($image);
+                });
+            }
 
-        // arquivo base64
-        if (!is_null($request->input($this->imageField)) && is_array($request->input($this->imageField))) {
-            $this->path = collect($request->input($this->imageField))->map(function($base64String){
-                return $this->resizeImage(base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64String)));
-            });
-        }
+            // arquivo base64
+            if (!is_null($request->input($imageField)) && is_array($request->input($imageField))) {
+                $this->path = collect($request->input($imageField))->map(function($base64String){
+                    return $this->resizeImage(base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64String)));
+                });
+            }
 
-        return $this->path;
+            $objModel->update([ $imageField => $this->path ]);
+        }        
+
+        // return $this->path;  
     }
 
     public function resizeImage($image_to_resize)
