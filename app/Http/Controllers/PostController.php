@@ -8,11 +8,11 @@ use Illuminate\Http\Request;
 
 class PostController extends Controller
 {
-    private $repo;
+    private $service;
 
     public function __construct()
     {
-        $this->repo = new ImageService(['image', 'cover'], 'posts');
+        $this->service = new ImageService(['image', 'cover'], 'posts');
     }
 
     /**
@@ -37,7 +37,7 @@ class PostController extends Controller
     public function store(Request $request)
     {
         $data = Post::create($request->except(['image', 'cover']));
-        $this->repo->uploadImage($request, $data);
+        $this->service->uploadImage($request, $data);
         return response()->json([
             'data' => $data,
             'message' => 'Criado com sucesso'
