@@ -67,9 +67,9 @@ class PostController extends Controller
      */
     public function update(Request $request, Post $post)
     {
-        $this->repo->verifyImageInStorage($post->image);
-        $post->update($request->except('image'));
-        $post->update(['image' => $this->repo->uploadImage($request)]);
+        $this->service->verifyImageInStorage($post);
+        $post->update($request->except(['image', 'cover']));
+        $this->service->uploadImage($request, $post);
         return response()->json([
             'data' => $post,
             'message' => 'Atualizado com sucesso'
@@ -84,7 +84,7 @@ class PostController extends Controller
      */
     public function destroy(Post $post)
     {
-        $this->repo->verifyImageInStorage($post->image);
+        $this->service->verifyImageInStorage($post);
         $post->delete();
         return response()->json([
             'message' => 'Apagado com sucesso'

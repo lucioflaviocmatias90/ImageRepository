@@ -54,9 +54,7 @@ class ImageService
             }
 
             $objModel->update([ $imageField => $this->path ]);
-        }        
-
-        // return $this->path;  
+        }
     }
 
     public function resizeImage($image_to_resize)
@@ -86,18 +84,20 @@ class ImageService
         }
     }
 
-    public function verifyImageInStorage($fileName)
+    public function verifyImageInStorage($objModel)
     {
-        if (!is_null($fileName) && is_array($fileName)) {
-            foreach ($fileName as $photo) {
-                switch ($this->storageDisk) {
-                    case 'public_uploads':
-                        Storage::disk($this->storageDisk)->delete(str_replace('/uploads/', '', $photo));
-                        break;
+        foreach ($this->imageFields as $imageField) {
+            if (!is_null($objModel->$imageField) && is_array($objModel->$imageField)) {
+                foreach ($objModel->$imageField as $photo) {
+                    switch ($this->storageDisk) {
+                        case 'public_uploads':
+                            Storage::disk($this->storageDisk)->delete(str_replace('/uploads/', '', $photo));
+                            break;
 
-                    case 'public':
-                        Storage::disk($this->storageDisk)->delete(str_replace('/storage/', '', $photo));
-                        break;
+                        case 'public':
+                            Storage::disk($this->storageDisk)->delete(str_replace('/storage/', '', $photo));
+                            break;
+                    }
                 }
             }
         }
