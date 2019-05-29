@@ -86,20 +86,19 @@ class ImageService
 
     public function verifyImageInStorage($objModel)
     {
-        foreach ($this->imageFields as $imageField) {
+        collect($this->imageFields)->each(function($imageField) use ($objModel) {
             if (!is_null($objModel->$imageField) && is_array($objModel->$imageField)) {
-                foreach ($objModel->$imageField as $photo) {
+                collect($objModel->$imageField)->each(function($photo) {
                     switch ($this->storageDisk) {
                         case 'public_uploads':
                             Storage::disk($this->storageDisk)->delete(str_replace('/uploads/', '', $photo));
                             break;
-
                         case 'public':
                             Storage::disk($this->storageDisk)->delete(str_replace('/storage/', '', $photo));
                             break;
                     }
-                }
+                });
             }
-        }
+        });
     }
 }
