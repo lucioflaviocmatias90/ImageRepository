@@ -178,6 +178,7 @@ return [
         // Intervention Image
         Intervention\Image\ImageServiceProvider::class,
         Dosarkz\LaravelUploader\Provider\LaravelUploaderServiceProvider::class,
+        App\Repositories\BackendServiceProvider::class,
 
     ],
 

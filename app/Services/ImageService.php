@@ -16,6 +16,7 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\ImageManagerStatic as Image;
@@ -28,7 +29,7 @@ class ImageService
     private $newWidth;
     private $path;
 
-    public function __construct(array $imageFields, $folderDestination = 'photos', $storageDisk = 'public', int $newWidth = 500)
+    public function __construct($imageFields, string $folderDestination = 'photos', string $storageDisk = 'public', int $newWidth = 500)
     {
         $this->imageFields = $imageFields;
         $this->folderDestination = $folderDestination;
@@ -36,25 +37,44 @@ class ImageService
         $this->newWidth = $newWidth;
     }
 
-    public function uploadImage($request, $objModel)
-    {        
-        foreach ($this->imageFields as $imageField) {
-            // arquivo binário
-            if ($request->hasFile($imageField)) {
-                $this->path = collect($request->file($imageField))->map(function($image) {
-                    return $this->resizeImage($image);
-                });
+
+
+    public function uploadImage(Request $request)
+    {
+        if (is_array($this->imageFields)) {
+
+            foreach ($this->imageFields as $imageField) {
+
+                $this->manyPhotos($imageField, $request);
             }
 
-            // arquivo base64
-            if (!is_null($request->input($imageField)) && is_array($request->input($imageField))) {
-                $this->path = collect($request->input($imageField))->map(function($base64String){
-                    return $this->resizeImage(base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64String)));
-                });
-            }
+        } else {
 
-            $objModel->update([ $imageField => $this->path ]);
+            $this->manyPhotos($this->imageFields, $request);
         }
+
+        return $this->path;
+    }
+
+    public function manyPhotos($imageField, $request)
+    {
+        // arquivo binÃ¡rio
+        if ($request->hasFile($imageField)) {
+
+            $this->path = collect($request->file($imageField))->map(function($image) {
+                return $this->resizeImage($image);
+            });
+        }
+
+        // arquivo base64
+        if (!is_null($request->input($imageField))) {
+
+            $this->path = collect($request->input($imageField))->map(function($base64String) {
+                return $this->resizeImage(base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64String)));
+            });
+        }
+
+        return $this->path;
     }
 
     public function resizeImage($image_to_resize)
@@ -62,18 +82,27 @@ class ImageService
         $width = Image::make($image_to_resize)->width();
 
         if ($width > $this->newWidth) {
+
             $resized_image = Image::make($image_to_resize)->resize($this->newWidth, null, function($constraint) {
                 $constraint->aspectRatio();
             })->stream('jpg', 75);
+
         } else {
+
             $resized_image = Image::make($image_to_resize)->stream('jpg', 75);
         }
 
-        $imageName = Str::random(10) . '.jpg';
+        $this->saveImage($resized_image);
+    }
+
+    public function saveImage($resized_image)
+    {
+        $imageName = Str::random(12) . '.jpg';
 
         Storage::disk($this->storageDisk)->put($this->folderDestination.'/'.$imageName, $resized_image);
 
         switch ($this->storageDisk) {
+
             case 'public_uploads':
                 return '/uploads/'.$this->folderDestination.'/'.$imageName;
                 break;
@@ -81,18 +110,27 @@ class ImageService
             case 'public':
                 return '/storage/'.$this->folderDestination.'/'.$imageName;
                 break;
+
+            case 's3':
+                return env('AWS_BASE_URL').'/'.$this->folderDestination.'/'.$imageName;
+                break;
         }
     }
 
     public function verifyImageInStorage($objModel)
     {
         collect($this->imageFields)->each(function($imageField) use ($objModel) {
+
             if (!is_null($objModel->$imageField) && is_array($objModel->$imageField)) {
+
                 collect($objModel->$imageField)->each(function($photo) {
+
                     switch ($this->storageDisk) {
+
                         case 'public_uploads':
                             Storage::disk($this->storageDisk)->delete(str_replace('/uploads/', '', $photo));
                             break;
+
                         case 'public':
                             Storage::disk($this->storageDisk)->delete(str_replace('/storage/', '', $photo));
                             break;

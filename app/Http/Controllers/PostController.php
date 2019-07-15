@@ -2,16 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Post;
+use App\Http\Requests\PostRequest;
+use App\Http\Resources\PostCollection;
+use App\Http\Resources\Posts as PostResource;
+use App\Repositories\Contracts\PostRepositoryInterface;
+use App\Repositories\Eloquent\PostRepository;
 use App\Services\ImageService;
-use Illuminate\Http\Request;
 
 class PostController extends Controller
 {
+    private $post;
     private $service;
 
-    public function __construct()
+    public function __construct(PostRepositoryInterface $post)
     {
+        $this->post = $post;
         $this->service = new ImageService(['image', 'cover'], 'posts');
     }
 
@@ -22,10 +27,8 @@ class PostController extends Controller
      */
     public function index()
     {
-        return response()->json([
-            'data' => Post::all(),
-            'message' => 'Encontrado com sucesso'
-        ], 200);
+        return (new PostResource($this->post->all()));
+//        return (new PostCollection($this->post->all()));
     }
 
     /**
@@ -34,14 +37,10 @@ class PostController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(PostRequest $request)
     {
-        $data = Post::create($request->except(['image', 'cover']));
-        $this->service->uploadImage($request, $data);
-        return response()->json([
-            'data' => $data,
-            'message' => 'Criado com sucesso'
-        ], 201);
+        $post = $this->post->create($request->except(['image', 'cover']));
+        return (new PostResource($post))->response()->setStatusCode(201);
     }
 
     /**
@@ -50,12 +49,10 @@ class PostController extends Controller
      * @param  \App\Post  $post
      * @return \Illuminate\Http\Response
      */
-    public function show(Post $post)
+    public function show($id)
     {
-        return response()->json([
-            'data' => $post,
-            'message' => 'Encontrado com sucesso'
-        ], 200);
+        $post = $this->post->find($id);
+        return (new PostResource($post))->response()->setStatusCode(200);
     }
 
     /**
@@ -65,15 +62,10 @@ class PostController extends Controller
      * @param  \App\Post  $post
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Post $post)
+    public function update(PostRequest $request, $id)
     {
-        $this->service->verifyImageInStorage($post);
-        $post->update($request->except(['image', 'cover']));
-        $this->service->uploadImage($request, $post);
-        return response()->json([
-            'data' => $post,
-            'message' => 'Atualizado com sucesso'
-        ], 200);
+        $post = $this->post->update($id, $request->except(['image', 'cover']));
+        return (new PostResource($post))->response()->setStatusCode(200);
     }
 
     /**
@@ -82,10 +74,10 @@ class PostController extends Controller
      * @param  \App\Post  $post
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Post $post)
+    public function destroy($id)
     {
-        $this->service->verifyImageInStorage($post);
-        $post->delete();
+        // $this->service->verifyImageInStorage($post);
+        $$this->post->delete($id);
         return response()->json([
             'message' => 'Apagado com sucesso'
         ], 200);
